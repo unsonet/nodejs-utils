@@ -89,37 +89,49 @@ export function hasFlag(args, name) {
 }
 
 // Simple CLI args parsing
-export function parseArgs(argv) {
-  const res = {};
+export function parseArgs(argv: string[]) {
+  const res: Record<string, any> = {};
+
+  const normalizeKey = (key: string) =>
+    key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+
+  const normalizeValue = (val: any) => {
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return val;
+  };
+
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg.startsWith('--')) {
-      const eq = arg.indexOf('=');
-      if (eq !== -1) {
-        const key = arg.slice(2, eq);
-        const val = arg.slice(eq + 1);
-        res[key] = val;
-      } else {
-        const key = arg.slice(2);
-        const next = argv[i + 1];
-        if (next && !next.startsWith('-')) {
-          res[key] = next;
-          i++;
-        } else {
-          res[key] = true;
-        }
-      }
-    } else if (arg.startsWith('-')) {
-      const key = arg.slice(1);
+
+    if (!arg.startsWith('--')) continue;
+
+    const eqIndex = arg.indexOf('=');
+
+    let key: string;
+    let val: any = true;
+
+    // --key=value
+    if (eqIndex !== -1) {
+      key = arg.slice(2, eqIndex);
+      val = arg.slice(eqIndex + 1);
+
+    } else {
+      key = arg.slice(2);
+
       const next = argv[i + 1];
+
+      // --key value
       if (next && !next.startsWith('-')) {
-        res[key] = next;
+        val = next;
         i++;
-      } else {
-        res[key] = true;
       }
     }
+
+    const normalizedKey = normalizeKey(key);
+    res[normalizedKey] = normalizeValue(val);
   }
+
   return res;
 }
 
